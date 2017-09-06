@@ -1,0 +1,81 @@
+Capas insumo dentro de la base de datos PostgreSQL/PostGIS
+
+Predios (polígonos)
+Banquetas (líneas)
+Calles (líneas)
+
+Primer consulta:
+
+Extraer frentes de manzana a partir de predios
+
+Convertir los polígonos de predio a líneas:
+
+Polygons to lines
+
+Explotamos la capa resultante:
+
+Explode lines
+
+Disolver los polígonos de predio
+
+Dissolve
+
+El resultado es una capa multiparte, convertimos a single part:
+
+Multipart to singleparts
+
+A la capa resultante le generamos un buffer de -1 metro:
+
+Fixed distance buffer
+
+Extraemos el “esqueleto” de los predios con las capas del buffer y las líneas explotadas:
+
+Extract by location
+
+Convertimos a líneas el polígono de la capa que convertimos a singleparts:
+
+Polygons to lines
+
+Dividimos la capa resultante de líneas con las líneas del esqueleto:
+
+Split lines with lines
+
+Estos son nuestros frentes de predio. Hasta este proceso, todos los resultado se guardaron en memoria, solo los frentes de predio los cargamos a la base de datos.
+
+Segunda consulta:
+Generar una línea perpendicular a la mitad del frente del predio, entre la manzana y la banqueta
+
+Añadimos un campo de tipo texto de 255 caracteres y calculamos:
+
+geom_to_wkt(make_line(geom_from_wkt(geom_to_wkt((line_interpolate_point($geometry,0.5*$length)))),
+geom_from_wkt(concat('POINT (',x(geom_from_wkt( geom_to_wkt((line_interpolate_point($geometry,0.5*$length)))))
++ 5*sin((line_interpolate_angle($geometry, 0.5*$length)+270)*(pi()/180)),
+' '
+,y(geom_from_wkt(geom_to_wkt((line_interpolate_point($geometry,0.5*$length)))))
++ 5*cos((line_interpolate_angle($geometry, 0.5*$length)+270)*(pi()/180)),')'))))
+
+
+Exportamos la tabla con el campo generado a formato CSV. Dependiento de la configuración de QGIS, puede que al exportar el CSV automáticamente lo importe como geometría y pedirá el sistema de referencia de coordenadas, si no, importamos como archivo delimitado por comas como geometría WKT, es posible que al importar no se muestre la capa y aparezca la leyenda de que se asignó 4326 como sistema de coordenadas, si ocurre esto, nos vamos a las propiedades de la capa y cambiamos al código EPSG que nos corresponda. De cualquier manera, tendrán que aparecer en pantalla nuestras líneas perpendiculares al frente de cada predio con un largo de 5 metros o el que le hayamos asignado, esta capa sigue siendo un CSV, lo guardamos como una capa espacial ya sea local, en la base de datos o como sea más conveniente.
+
+Poligonizamos la capa de banquetas:
+
+Polygonize
+
+A la capa resultante le sacamos la diferencia con los polígonos de predios:
+
+Difference
+
+A las líneas perpendiculares les añadimos dos campos con sus atributos, “calle” y “manzana”, se puede resolver con una unión por localización.
+
+Hacemos un clip con la capa de polígonos de banqueta y las líneas perpendiculares con atributos:
+
+Clip
+
+Calculamos el largo de cada línea y obtendremos el ancho de banqueta en ese frente de predio.
+
+Estando en la base de datos, podemos consultar el ancho promedio por calle:
+
+SELECT nombre, avg(st_length(geom))
+FROM public.perp
+GROUP BY nombre
+ORDER BY avg
