@@ -1,48 +1,48 @@
-Capas insumo dentro de la base de datos PostgreSQL/PostGIS
+                                        Capas insumo dentro de la base de datos PostgreSQL/PostGIS
 
-Predios (polígonos)
-Banquetas (líneas)
-Calles (líneas)
+      Predios (polígonos)
+      Banquetas (líneas)
+      Calles (líneas)
 
-Primer consulta:
+                    Primer consulta:
 
 Extraer frentes de manzana a partir de predios
 
 Convertir los polígonos de predio a líneas:
 
-Polygons to lines
+  Polygons to lines
 
 Explotamos la capa resultante:
 
-Explode lines
+  Explode lines
 
 Disolver los polígonos de predio
 
-Dissolve
+  Dissolve
 
 El resultado es una capa multiparte, convertimos a single part:
 
-Multipart to singleparts
+  Multipart to singleparts
 
 A la capa resultante le generamos un buffer de -1 metro:
 
-Fixed distance buffer
+  Fixed distance buffer
 
 Extraemos el “esqueleto” de los predios con las capas del buffer y las líneas explotadas:
 
-Extract by location
+  Extract by location
 
 Convertimos a líneas el polígono de la capa que convertimos a singleparts:
 
-Polygons to lines
+  Polygons to lines
 
 Dividimos la capa resultante de líneas con las líneas del esqueleto:
 
-Split lines with lines
+  Split lines with lines
 
 Estos son nuestros frentes de predio. Hasta este proceso, todos los resultado se guardaron en memoria, solo los frentes de predio los cargamos a la base de datos.
 
-Segunda consulta:
+                    Segunda consulta:
 Generar una línea perpendicular a la mitad del frente del predio, entre la manzana y la banqueta
 
 Añadimos un campo de tipo texto de 255 caracteres y calculamos:
@@ -59,17 +59,17 @@ Exportamos la tabla con el campo generado a formato CSV. Dependiento de la confi
 
 Poligonizamos la capa de banquetas:
 
-Polygonize
+    Polygonize
 
 A la capa resultante le sacamos la diferencia con los polígonos de predios:
 
-Difference
+  Difference
 
 A las líneas perpendiculares les añadimos dos campos con sus atributos, “calle” y “manzana”, se puede resolver con una unión por localización.
 
 Hacemos un clip con la capa de polígonos de banqueta y las líneas perpendiculares con atributos:
 
-Clip
+  Clip
 
 Calculamos el largo de cada línea y obtendremos el ancho de banqueta en ese frente de predio.
 
